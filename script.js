@@ -2,6 +2,7 @@ let model;
 const labels = ["Early Blight", "Late Blight", "Healthy"];
 let currentScreen = 'upload';
 let imageZoom = 1;
+let isDarkMode = false;
 
 // DOM Elements
 const uploadScreen = document.querySelector('.upload-screen');
@@ -19,11 +20,17 @@ const accuracyValue = document.getElementById('accuracyValue');
 const loadingMessage = document.getElementById('loadingMessage');
 const toast = document.getElementById('toast');
 const recommendationBox = document.getElementById('recommendationBox');
+const themeToggleBtn = document.getElementById('themeToggle');
 
 // Initialize the app
 async function initApp() {
-  showLoading(true, "Initializing Tomato Leaf Doctor...");
   updateProgress(0);
+  
+  // Check for saved theme preference
+  const savedTheme = localStorage.getItem('tomatoLeafTheme');
+  if (savedTheme === 'dark') {
+    enableDarkMode();
+  }
   
   // Create background particles
   createParticles();
@@ -31,31 +38,133 @@ async function initApp() {
   // Load AI model
   await loadModel();
   
-  showLoading(false);
-  showToast("AI System Ready! Upload a leaf image to begin.", "success");
+  // Add ripple effects to all buttons
+  addRippleEffects();
+  
+  // Add hover animations
+  addHoverAnimations();
 }
 
 // Create floating particles
 function createParticles() {
-  const particlesContainer = document.querySelector('.floating-shapes');
-  for (let i = 0; i < 6; i++) {
-    const shape = document.createElement('div');
-    shape.className = `shape shape${i+5}`;
-    shape.style.width = `${Math.random() * 100 + 50}px`;
-    shape.style.height = shape.style.width;
-    shape.style.top = `${Math.random() * 100}%`;
-    shape.style.left = `${Math.random() * 100}%`;
-    shape.style.animationDuration = `${Math.random() * 20 + 15}s`;
-    shape.style.animationDelay = `${Math.random() * 5}s`;
-    particlesContainer.appendChild(shape);
+  const particlesContainer = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.position = 'absolute';
+    particle.style.width = `${Math.random() * 4 + 2}px`;
+    particle.style.height = particle.style.width;
+    particle.style.background = `rgba(149, 213, 178, ${Math.random() * 0.3 + 0.1})`;
+    particle.style.borderRadius = '50%';
+    particle.style.top = `${Math.random() * 100}%`;
+    particle.style.left = `${Math.random() * 100}%`;
+    particle.style.zIndex = '-1';
+    
+    // Animation
+    particle.animate([
+      {
+        transform: `translateY(0) rotate(0deg)`,
+        opacity: Math.random() * 0.5 + 0.3
+      },
+      {
+        transform: `translateY(${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg)`,
+        opacity: 0
+      }
+    ], {
+      duration: Math.random() * 5000 + 5000,
+      iterations: Infinity,
+      easing: 'ease-in-out'
+    });
+    
+    particlesContainer.appendChild(particle);
   }
+}
+
+// Toggle Dark Mode
+function toggleDarkMode() {
+  if (isDarkMode) {
+    disableDarkMode();
+  } else {
+    enableDarkMode();
+  }
+}
+
+function enableDarkMode() {
+  document.body.classList.add('dark-mode');
+  isDarkMode = true;
+  themeToggleBtn.setAttribute('title', 'Switch to Light Mode');
+  localStorage.setItem('tomatoLeafTheme', 'dark');
+}
+
+function disableDarkMode() {
+  document.body.classList.remove('dark-mode');
+  isDarkMode = false;
+  themeToggleBtn.setAttribute('title', 'Switch to Dark Mode');
+  localStorage.setItem('tomatoLeafTheme', 'light');
+}
+
+// Add ripple effect to buttons
+function addRippleEffects() {
+  const buttons = document.querySelectorAll('.animate-button');
+  
+  buttons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      const ripple = document.createElement('span');
+      const rect = this.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = e.clientX - rect.left - size / 2;
+      const y = e.clientY - rect.top - size / 2;
+      
+      ripple.style.cssText = `
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.7);
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+        width: ${size}px;
+        height: ${size}px;
+        top: ${y}px;
+        left: ${x}px;
+        pointer-events: none;
+      `;
+      
+      // Add animation keyframes
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes ripple-animation {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      this.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    });
+  });
+}
+
+// Add hover animations
+function addHoverAnimations() {
+  const hoverElements = document.querySelectorAll('.badge, .info-card, .step');
+  
+  hoverElements.forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      el.style.transform = 'translateY(-3px)';
+    });
+    
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = 'translateY(0)';
+    });
+  });
 }
 
 // Load Teachable Machine model
 async function loadModel() {
   try {
     updateProgress(30);
-    updateLoadingMessage("Loading AI model components...");
     
     // Try to load the model
     model = await tf.loadLayersModel(
@@ -63,7 +172,6 @@ async function loadModel() {
     );
     
     updateProgress(70);
-    updateLoadingMessage("Initializing neural network...");
     
     // Warm up the model
     const warmupTensor = tf.zeros([1, 224, 224, 3]);
@@ -71,21 +179,28 @@ async function loadModel() {
     warmupTensor.dispose();
     
     updateProgress(100);
-    updateLoadingMessage("AI system ready!");
     
-    // Update status
-    statusMessage.innerHTML = `<i class="fas fa-check-circle" style="color: #2d6a4f;"></i> AI System Ready ✅`;
-    statusMessage.style.color = "#2d6a4f";
-    statusMessage.style.fontWeight = "600";
+    // Update status with animation
+    statusMessage.style.opacity = '0';
+    setTimeout(() => {
+      statusMessage.innerHTML = `<i class="fas fa-check-circle" style="color: #2d6a4f;"></i> AI System Ready ✅`;
+      statusMessage.style.color = "#2d6a4f";
+      statusMessage.style.fontWeight = "600";
+      statusMessage.style.opacity = '1';
+      statusMessage.style.transform = 'translateY(-5px)';
+      setTimeout(() => {
+        statusMessage.style.transform = 'translateY(0)';
+      }, 200);
+    }, 300);
     
-    // Show success animation
+    // Show success animation on badges
     setTimeout(() => {
       const badges = document.querySelectorAll('.badge');
       badges.forEach((badge, index) => {
         setTimeout(() => {
-          badge.style.transform = 'scale(1.1)';
+          badge.style.transform = 'scale(1.1) rotate(5deg)';
           setTimeout(() => {
-            badge.style.transform = 'scale(1)';
+            badge.style.transform = 'scale(1) rotate(0)';
           }, 300);
         }, index * 200);
       });
@@ -97,7 +212,6 @@ async function loadModel() {
     statusMessage.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i> Using Enhanced Demo Mode`;
     statusMessage.style.color = "#ff9800";
     model = 'demo';
-    showToast("Demo mode activated. For full AI features, check model connection.", "warning");
   }
 }
 
@@ -112,19 +226,35 @@ function updateProgress(percentage) {
 // Update loading message
 function updateLoadingMessage(message) {
   if (loadingMessage) {
-    loadingMessage.textContent = message;
+    loadingMessage.style.opacity = '0';
+    setTimeout(() => {
+      loadingMessage.textContent = message;
+      loadingMessage.style.opacity = '1';
+    }, 200);
   }
 }
 
 // Show loading overlay with custom message
 function showLoading(show, message = "Processing...") {
   if (loadingOverlay) {
-    loadingOverlay.style.display = show ? 'flex' : 'none';
-    updateLoadingMessage(message);
+    if (show) {
+      loadingOverlay.style.display = 'flex';
+      updateLoadingMessage(message);
+      // Add animation to loading stats
+      const stats = document.querySelectorAll('.stat');
+      stats.forEach((stat, index) => {
+        setTimeout(() => {
+          stat.style.opacity = '1';
+          stat.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    } else {
+      loadingOverlay.style.display = 'none';
+    }
   }
 }
 
-// Show toast notification - FIXED VERSION
+// Show toast notification
 function showToast(message, type = "info") {
   const icons = {
     success: '<i class="fas fa-check-circle"></i>',
@@ -153,7 +283,6 @@ function showToast(message, type = "info") {
   
   // Calculate position to avoid cutoff
   const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
   
   // For mobile screens, adjust position
   if (screenWidth < 768) {
@@ -163,11 +292,11 @@ function showToast(message, type = "info") {
     toast.style.maxWidth = 'calc(100vw - 40px)';
   } else {
     // For desktop, position at bottom right but ensure it's visible
-    const maxWidth = Math.min(350, screenWidth - 80); // Leave some margin
+    const maxWidth = Math.min(350, screenWidth - 80);
     toast.style.maxWidth = `${maxWidth}px`;
     
     // Check if toast would overflow on right
-    const toastWidth = maxWidth + 50; // Account for padding
+    const toastWidth = maxWidth + 50;
     if (toastWidth > screenWidth - 60) {
       toast.style.right = '30px';
       toast.style.left = '30px';
@@ -175,8 +304,24 @@ function showToast(message, type = "info") {
     }
   }
   
-  // Show toast
+  // Show toast with animation
   toast.style.display = 'flex';
+  
+  // Add shake animation for important messages
+  if (type === 'error' || type === 'warning') {
+    toast.style.animation = 'slideInRight 0.3s ease-out, shake 0.5s ease-in-out 0.3s';
+    
+    // Add shake keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
   
   // Auto-hide after 3 seconds
   setTimeout(() => {
@@ -209,6 +354,15 @@ imageUpload.addEventListener('change', function() {
         showLoading(true, "Preparing image for analysis...");
         resetZoom();
         
+        // Add image preview animation
+        preview.style.opacity = '0';
+        preview.style.transform = 'scale(0.8)';
+        setTimeout(() => {
+          preview.style.opacity = '1';
+          preview.style.transform = 'scale(1)';
+          preview.style.transition = 'all 0.5s ease-out';
+        }, 100);
+        
         // Update analyzing steps
         const steps = document.querySelectorAll('.analyzing-steps .step');
         steps.forEach(step => step.classList.remove('active'));
@@ -223,6 +377,13 @@ imageUpload.addEventListener('change', function() {
       };
     };
     reader.readAsDataURL(file);
+    
+    // Add file upload animation
+    const uploadSection = document.querySelector('.upload-section');
+    uploadSection.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      uploadSection.style.transform = 'scale(1)';
+    }, 200);
   }
 });
 
@@ -238,6 +399,7 @@ function zoomImage(factor) {
 function resetZoom() {
   imageZoom = 1;
   preview.style.transform = 'scale(1)';
+  showToast("Zoom reset to 100%", "info");
 }
 
 // Enhance image button
@@ -252,9 +414,13 @@ function enhanceImage() {
   ctx.filter = 'contrast(1.2) brightness(1.1) saturate(1.3)';
   ctx.drawImage(preview, 0, 0);
   
-  // Update preview
-  preview.src = canvas.toDataURL('image/jpeg', 0.9);
-  showToast("Image enhanced for better analysis!", "success");
+  // Update preview with animation
+  preview.style.opacity = '0.5';
+  setTimeout(() => {
+    preview.src = canvas.toDataURL('image/jpeg', 0.9);
+    preview.style.opacity = '1';
+    showToast("Image enhanced for better analysis! ✨", "success");
+  }, 300);
 }
 
 // Switch to results screen
@@ -262,9 +428,18 @@ function switchToResultsScreen() {
   currentScreen = 'results';
   uploadScreen.classList.add('hidden');
   
-  // Add a small delay for smooth transition
+  // Add transition animation
   setTimeout(() => {
     resultsScreen.classList.add('active-screen');
+    
+    // Animate elements on results screen
+    const resultsElements = resultsScreen.querySelectorAll('.animate-fade-up, .animate-scale, .animate-card');
+    resultsElements.forEach((el, index) => {
+      setTimeout(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
     
     // Animate accuracy meter
     setTimeout(() => {
@@ -282,6 +457,10 @@ function animateAccuracyMeter(accuracy = 95) {
       clearInterval(interval);
       accuracyFill.style.width = `${accuracy}%`;
       accuracyValue.textContent = `${accuracy}%`;
+      accuracyValue.style.transform = 'scale(1.1)';
+      setTimeout(() => {
+        accuracyValue.style.transform = 'scale(1)';
+      }, 200);
     } else {
       current++;
       accuracyFill.style.width = `${current}%`;
@@ -293,31 +472,42 @@ function animateAccuracyMeter(accuracy = 95) {
 // Go back to upload screen
 function goBack() {
   currentScreen = 'upload';
-  uploadScreen.classList.remove('hidden');
-  resultsScreen.classList.remove('active-screen');
   
-  // Reset form
-  imageUpload.value = '';
-  preview.style.display = 'none';
-  preview.src = '';
-  resultContainer.innerHTML = `
-    <div class="results-loading" id="results-loading">
-      <div class="loading-spinner"></div>
-      <p>Upload a leaf image to see analysis</p>
-      <div class="analyzing-steps">
-        <div class="step"><i class="fas fa-check"></i> Image Loaded</div>
-        <div class="step"><i class="fas fa-cog"></i> Processing</div>
-        <div class="step"><i class="fas fa-brain"></i> AI Analyzing</div>
-        <div class="step"><i class="fas fa-chart-bar"></i> Generating Report</div>
+  // Add exit animation for results screen
+  resultsScreen.style.transform = 'translateX(100%) scale(0.9)';
+  resultsScreen.style.opacity = '0';
+  
+  setTimeout(() => {
+    uploadScreen.classList.remove('hidden');
+    resultsScreen.classList.remove('active-screen');
+    
+    // Reset form
+    imageUpload.value = '';
+    preview.style.display = 'none';
+    preview.src = '';
+    resultContainer.innerHTML = `
+      <div class="results-loading" id="results-loading">
+        <div class="loading-spinner large"></div>
+        <p class="animate-pulse">Upload a leaf image to see analysis</p>
+        <div class="analyzing-steps">
+          <div class="step"><i class="fas fa-check"></i> Image Loaded</div>
+          <div class="step"><i class="fas fa-cog"></i> Processing</div>
+          <div class="step"><i class="fas fa-brain"></i> AI Analyzing</div>
+          <div class="step"><i class="fas fa-chart-bar"></i> Generating Report</div>
+        </div>
       </div>
-    </div>
-  `;
-  
-  // Reset accuracy meter
-  accuracyFill.style.width = '0%';
-  accuracyValue.textContent = '0%';
-  recommendationBox.innerHTML = '';
-  recommendationBox.style.display = 'none';
+    `;
+    
+    // Reset accuracy meter
+    accuracyFill.style.width = '0%';
+    accuracyValue.textContent = '0%';
+    recommendationBox.innerHTML = '';
+    recommendationBox.style.display = 'none';
+    
+    // Reset results screen style
+    resultsScreen.style.transform = '';
+    resultsScreen.style.opacity = '';
+  }, 300);
 }
 
 // Make prediction
@@ -370,7 +560,7 @@ async function predict() {
   }
 }
 
-// Display results - FIXED VERSION WITH NO OVERFLOW
+// Display results
 function displayResults(data) {
   resultContainer.innerHTML = '';
   
@@ -387,6 +577,8 @@ function displayResults(data) {
     const percentage = (normalizedData[i] * 100).toFixed(1);
     const row = document.createElement('div');
     row.className = 'prediction-row';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-20px)';
     
     // Icons for each disease
     let icon = 'fa-seedling';
@@ -404,17 +596,26 @@ function displayResults(data) {
     `;
     resultContainer.appendChild(row);
 
+    // Animate row appearance
+    setTimeout(() => {
+      row.style.opacity = '1';
+      row.style.transform = 'translateX(0)';
+      row.style.transition = 'all 0.5s ease-out';
+    }, 100 + (i * 200));
+
     // Animate bar fill
     setTimeout(() => {
       const barFill = row.querySelector('.bar-fill');
       barFill.style.width = `${percentage}%`;
-    }, 100 + (i * 200));
+    }, 300 + (i * 200));
   });
 
-  // Final diagnosis - USING FIXED STRUCTURE
+  // Final diagnosis
   setTimeout(() => {
     const finalDiv = document.createElement('div');
     finalDiv.className = 'final-prediction';
+    finalDiv.style.opacity = '0';
+    finalDiv.style.transform = 'scale(0.9)';
     
     let icon = '🌿';
     let color = getColorForDiagnosis(labels[maxIndex]);
@@ -438,6 +639,13 @@ function displayResults(data) {
     `;
     
     resultContainer.appendChild(finalDiv);
+    
+    // Animate final prediction
+    setTimeout(() => {
+      finalDiv.style.opacity = '1';
+      finalDiv.style.transform = 'scale(1)';
+      finalDiv.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    }, 1000);
     
     // Show results toast notification
     setTimeout(() => {
@@ -473,7 +681,7 @@ function generateDemoPredictions() {
   // Add some randomness
   const randomData = diseases.map(d => {
     const base = d.weight;
-    const random = Math.random() * 0.3 - 0.15; // ±15%
+    const random = Math.random() * 0.3 - 0.15;
     return Math.max(0.05, base + random);
   });
   
@@ -540,7 +748,7 @@ function showRecommendations(diagnosis, confidence) {
   `;
   
   rec.tips.forEach(tip => {
-    html += `<li>${tip}</li>`;
+    html += `<li class="animate-fade-in">${tip}</li>`;
   });
   
   html += `
@@ -553,102 +761,32 @@ function showRecommendations(diagnosis, confidence) {
   
   recommendationBox.innerHTML = html;
   recommendationBox.style.display = 'block';
+  recommendationBox.style.opacity = '0';
+  recommendationBox.style.transform = 'translateY(20px)';
   
-  // Add recommendation box styles
-  const style = document.createElement('style');
-  style.textContent = `
-    .recommendation-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
+  // Animate recommendation box
+  setTimeout(() => {
+    recommendationBox.style.opacity = '1';
+    recommendationBox.style.transform = 'translateY(0)';
+    recommendationBox.style.transition = 'all 0.5s ease-out';
     
-    .recommendation-icon {
-      font-size: 1.8rem;
-      flex-shrink: 0;
-    }
-    
-    .recommendation-title-container {
-      flex: 1;
-      min-width: 0;
-    }
-    
-    .recommendation-title {
-      margin: 0 0 8px 0;
-      font-size: 1.1rem;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
-    
-    .recommendation-subtitle {
-      color: #666;
-      margin: 0;
-      font-size: 0.9rem;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
-    
-    .recommendation-tips {
-      background: rgba(248, 253, 249, 0.8);
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-    }
-    
-    .recommendation-tips h5 {
-      color: var(--dark);
-      margin: 0 0 12px 0;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .tips-list {
-      margin: 0;
-      padding-left: 20px;
-    }
-    
-    .tips-list li {
-      margin-bottom: 8px;
-      color: #555;
-      font-size: 0.9rem;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      line-height: 1.4;
-    }
-    
-    .recommendation-footer {
-      font-size: 0.85rem;
-      color: #777;
-      text-align: center;
-    }
-    
-    @media (max-width: 480px) {
-      .recommendation-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 10px;
-      }
-      
-      .recommendation-title-container {
-        text-align: center;
-        width: 100%;
-      }
-      
-      .recommendation-icon {
-        margin-bottom: 5px;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+    // Animate list items
+    const tips = recommendationBox.querySelectorAll('.tips-list li');
+    tips.forEach((tip, index) => {
+      setTimeout(() => {
+        tip.style.opacity = '1';
+        tip.style.transform = 'translateX(0)';
+      }, index * 100);
+    });
+  }, 100);
 }
 
 // Launch confetti animation
 function launchConfetti() {
-  const colors = ['#2d6a4f', '#40916c', '#95d5b2', '#d8f3dc'];
+  const colors = isDarkMode ? 
+    ['#2d6a4f', '#40916c', '#95d5b2', '#d8f3dc'] :
+    ['#2d6a4f', '#40916c', '#95d5b2', '#d8f3dc'];
+  
   const resultsScreen = document.querySelector('.results-screen');
   
   for (let i = 0; i < 30; i++) {
@@ -724,7 +862,7 @@ function shareResults() {
         text: text,
         url: window.location.href
       }).then(() => {
-        showToast("Results shared successfully!", "success");
+        showToast("Results shared successfully! 📤", "success");
       });
     } else {
       navigator.clipboard.writeText(text).then(() => {
@@ -747,8 +885,17 @@ function shareResults() {
 
 // Save report (placeholder)
 function saveReport() {
-  showToast("PDF report feature coming soon!", "info");
-  // Future implementation: Generate and download PDF report
+  // Add download animation
+  const saveBtn = document.querySelector('.action-btn.success');
+  const originalHtml = saveBtn.innerHTML;
+  saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+  saveBtn.disabled = true;
+  
+  setTimeout(() => {
+    showToast("PDF report feature coming soon! 🚀", "info");
+    saveBtn.innerHTML = originalHtml;
+    saveBtn.disabled = false;
+  }, 1500);
 }
 
 // Add drag and drop functionality
@@ -758,27 +905,30 @@ document.addEventListener('DOMContentLoaded', function() {
   uploadSection.addEventListener('dragover', function(e) {
     e.preventDefault();
     this.style.borderColor = 'var(--secondary)';
-    this.style.transform = 'translateY(-5px)';
+    this.style.transform = 'translateY(-5px) scale(1.02)';
   });
   
   uploadSection.addEventListener('dragleave', function() {
     this.style.borderColor = 'var(--accent)';
-    this.style.transform = 'translateY(0)';
+    this.style.transform = 'translateY(0) scale(1)';
   });
   
   uploadSection.addEventListener('drop', function(e) {
     e.preventDefault();
     this.style.borderColor = 'var(--accent)';
-    this.style.transform = 'translateY(0)';
+    this.style.transform = 'translateY(0) scale(1)';
     
     if (e.dataTransfer.files.length) {
       imageUpload.files = e.dataTransfer.files;
       const event = new Event('change', { bubbles: true });
       imageUpload.dispatchEvent(event);
-      showToast("Image dropped successfully!", "success");
+      showToast("Image dropped successfully! 📁", "success");
     }
   });
 });
+
+// Add event listener for theme toggle
+themeToggleBtn.addEventListener('click', toggleDarkMode);
 
 // Initialize the app
 window.addEventListener('DOMContentLoaded', initApp);
