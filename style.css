@@ -322,12 +322,6 @@ body.dark-mode .subtitle {
     transition: var(--transition);
 }
 
-body.dark-mode .badge {
-    background: rgba(149, 213, 178, 0.1);
-    color: var(--light-accent);
-    border-color: rgba(149, 213, 178, 0.2);
-}
-
 .badge:hover {
     transform: translateY(-2px) scale(1.05);
     background: rgba(149, 213, 178, 0.25);
@@ -369,19 +363,6 @@ body.dark-mode .upload-section {
     position: relative;
     z-index: 1;
 }
-
-.pulse-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
-
 @keyframes pulse {
     0% {
         transform: translate(-50%, -50%) scale(1);
@@ -547,7 +528,7 @@ body.dark-mode .step-content p {
     overflow: hidden;
 }
 
-.back-btn::before, .action-btn::before, .enhance-btn::before, .zoom-btn::before {
+.back-btn::before, .action-btn::before, .zoom-btn::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -560,7 +541,7 @@ body.dark-mode .step-content p {
     transition: width 0.6s, height 0.6s;
 }
 
-.back-btn:hover::before, .action-btn:hover::before, .enhance-btn:hover::before, .zoom-btn:hover::before {
+.back-btn:hover::before, .action-btn:hover::before, .zoom-btn:hover::before {
     width: 300px;
     height: 300px;
 }
@@ -619,27 +600,6 @@ body.dark-mode .back-btn {
 body.dark-mode .preview-header h3 {
     color: var(--dark-text);
 }
-
-.enhance-btn {
-    background: var(--gradient);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: var(--transition);
-    flex-shrink: 0;
-}
-
-.enhance-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(64, 145, 108, 0.3);
-}
-
 .preview-wrapper {
     position: relative;
     border-radius: 16px;
@@ -1729,10 +1689,6 @@ body.dark-mode .disclaimer {
         gap: 10px;
     }
     
-    .enhance-btn {
-        align-self: flex-start;
-    }
-    
     /* Mobile fixes for final prediction */
     .final-prediction {
         padding: 18px 15px;
@@ -2464,27 +2420,6 @@ body.dark-mode .back-btn {
 body.dark-mode .preview-header h3 {
     color: var(--dark-text);
 }
-
-.enhance-btn {
-    background: var(--gradient);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: var(--transition);
-    flex-shrink: 0;
-}
-
-.enhance-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(64, 145, 108, 0.3);
-}
-
 .preview-wrapper {
     position: relative;
     border-radius: 16px;

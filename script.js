@@ -16,7 +16,6 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const accuracyFill = document.getElementById('accuracyFill');
-const accuracyValue = document.getElementById('accuracyValue');
 const loadingMessage = document.getElementById('loadingMessage');
 const toast = document.getElementById('toast');
 const recommendationBox = document.getElementById('recommendationBox');
@@ -402,27 +401,6 @@ function resetZoom() {
   showToast("Zoom reset to 100%", "info");
 }
 
-// Enhance image button
-function enhanceImage() {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  
-  canvas.width = preview.naturalWidth;
-  canvas.height = preview.naturalHeight;
-  
-  // Apply enhancements
-  ctx.filter = 'contrast(1.2) brightness(1.1) saturate(1.3)';
-  ctx.drawImage(preview, 0, 0);
-  
-  // Update preview with animation
-  preview.style.opacity = '0.5';
-  setTimeout(() => {
-    preview.src = canvas.toDataURL('image/jpeg', 0.9);
-    preview.style.opacity = '1';
-    showToast("Image enhanced for better analysis! ✨", "success");
-  }, 300);
-}
-
 // Switch to results screen
 function switchToResultsScreen() {
   currentScreen = 'results';
@@ -464,7 +442,6 @@ function animateAccuracyMeter(accuracy = 95) {
     } else {
       current++;
       accuracyFill.style.width = `${current}%`;
-      accuracyValue.textContent = `${current}%`;
     }
   }, 20);
 }
@@ -500,7 +477,6 @@ function goBack() {
     
     // Reset accuracy meter
     accuracyFill.style.width = '0%';
-    accuracyValue.textContent = '0%';
     recommendationBox.innerHTML = '';
     recommendationBox.style.display = 'none';
     
