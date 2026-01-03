@@ -23,7 +23,7 @@ This project is useful because:
 ## How to Get Started
 
 ### Live Demo (MVP)
-https://muskan1334.github.io/Tomato-Leaf-Doctor/
+https://shakshi127.github.io/Tomato-Leaf-Doctor-main/
 
 ### Steps to Use the Application
 1. Open the live demo link in a browser
